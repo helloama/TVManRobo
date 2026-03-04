@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(file \"D:\\\\TVRoboPhetta\"/*)",
+      "Bash(dir /a \"D:\\\\TVRoboPhetta\")",
+      "Bash(node -e \":*)",
+      "Bash(npm install)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(where npm.cmd)",
+      "Bash(where npx.cmd)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)",
+      "Bash(ls -lh \"D:\\\\TVRoboPhetta\\\\public\\\\models\\\\TVman.fbx\" \"D:\\\\TVRoboPhetta\\\\public\\\\models\\\\tvman.glb\" \"D:\\\\TVRoboPhetta\\\\public\\\\models\\\\tvmanwelcomenpc-v1.glb\" \"D:\\\\TVRoboPhetta\\\\public\\\\models\\\\Models\\\\Objects_Interior\\(Village\\)_Demo.fbx\")",
+      "Bash(ls -1 *.fbx)",
+      "Bash(ls *.fbx)",
+      "Bash(python3 -c \":*)",
+      "Bash(node -e \"require\\(''fs''\\).writeFileSync\\(''D:/TVRoboPhetta/inspect-fbx.mjs'', ''''\\)\")",
+      "Bash(node inspect-fbx.mjs)",
+      "Bash(node -e \"const fs=require\\(''fs''\\); const c=fs.readFileSync\\(''D:/TVRoboPhetta/inspect-fbx.mjs'',''utf8''\\); const lines=c.split\\(''\\\\n''\\); console.log\\(''Line 182:'', JSON.stringify\\(lines[181]\\)\\); console.log\\(''Line 183:'', JSON.stringify\\(lines[182]\\)\\); console.log\\(''Line 184:'', JSON.stringify\\(lines[183]\\)\\); console.log\\(''Line 185:'', JSON.stringify\\(lines[184]\\)\\);\")",
+      "Bash(bash --version)",
+      "Bash(ls -lh \"D:\\\\TVRoboPhetta\\\\public\\\\models\\\\Models\"\" 2>/dev/null || echo \"Directory not found or empty \")",
+      "Bash(find . -name \"Rig_Medium_*.fbx\" -exec ls -lh {} ;)",
+      "Bash(wc -l \"D:/TVRoboPhetta/public/models/Textures/\"*.*)",
+      "Bash(xargs grep -l \"dialogue\\\\|cutscene\\\\|UI\\\\|menu\\\\|story\")",
+      "Bash(wc -l /d/TVRoboPhetta/src/*.js)",
+      "Bash(ls -la D:/TVRoboPhetta/public/models/animations/*.glb)"
+    ]
+  }
+}

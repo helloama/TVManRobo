@@ -1,0 +1,12 @@
+{
+  "packs": [
+    { "name": "Rig_Medium_CombatMelee",     "file": "Rig_Medium_CombatMelee.fbx" },
+    { "name": "Rig_Medium_CombatRanged",     "file": "Rig_Medium_CombatRanged.fbx" },
+    { "name": "Rig_Medium_General",          "file": "Rig_Medium_General.fbx" },
+    { "name": "Rig_Medium_MovementAdvanced", "file": "Rig_Medium_MovementAdvanced.fbx" },
+    { "name": "Rig_Medium_MovementBasic",    "file": "Rig_Medium_MovementBasic.fbx" },
+    { "name": "Rig_Medium_Simulation",       "file": "Rig_Medium_Simulation.fbx" },
+    { "name": "Rig_Medium_Special",          "file": "Rig_Medium_Special.fbx" },
+    { "name": "Rig_Medium_Tools",            "file": "Rig_Medium_Tools.fbx" }
+  ]
+}

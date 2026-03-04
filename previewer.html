@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Animation Previewer - TVRoboPhetta</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', sans-serif; color: #e0e0e0; }
+    #app { display: flex; height: 100%; }
+    #sidebar {
+      width: 340px; min-width: 340px; background: #16213e;
+      display: flex; flex-direction: column; border-right: 1px solid #333;
+    }
+    #sidebar h2 { padding: 12px 16px; background: #0f3460; font-size: 1rem; }
+    #search-box {
+      margin: 8px; padding: 8px 12px; border: 1px solid #444; border-radius: 4px;
+      background: #1a1a2e; color: #e0e0e0; font-size: 0.85rem;
+    }
+    #series-nav {
+      display: flex; flex-wrap: wrap; gap: 4px; padding: 8px;
+      border-bottom: 1px solid #333; max-height: 120px; overflow-y: auto;
+    }
+    .series-btn {
+      padding: 3px 8px; border: 1px solid #555; border-radius: 3px;
+      background: #1a1a2e; color: #aaa; cursor: pointer; font-size: 0.7rem;
+    }
+    .series-btn:hover, .series-btn.active { background: #0f3460; color: #fff; border-color: #4a9eff; }
+    #anim-list {
+      flex: 1; overflow-y: auto; padding: 4px;
+    }
+    .anim-item {
+      padding: 6px 12px; cursor: pointer; border-radius: 4px;
+      font-size: 0.8rem; display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 2px;
+    }
+    .anim-item:hover { background: #1f3a60; }
+    .anim-item.active { background: #0f3460; color: #4a9eff; font-weight: bold; }
+    .anim-item.labeled { border-left: 3px solid #4a9eff; }
+    .anim-label {
+      font-size: 0.65rem; background: #4a9eff22; color: #4a9eff;
+      padding: 1px 6px; border-radius: 10px;
+    }
+    #viewport { flex: 1; position: relative; }
+    canvas#preview { display: block; width: 100%; height: 100%; }
+    #info-panel {
+      position: absolute; top: 12px; left: 12px; right: 12px;
+      display: flex; justify-content: space-between; pointer-events: none;
+    }
+    #now-playing {
+      background: #000a; padding: 8px 14px; border-radius: 6px;
+      font-size: 0.85rem; pointer-events: auto;
+    }
+    #controls-panel {
+      position: absolute; bottom: 12px; left: 12px; right: 12px;
+      background: #000a; padding: 10px 14px; border-radius: 6px;
+      display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    }
+    #controls-panel button {
+      padding: 5px 12px; border: 1px solid #555; border-radius: 4px;
+      background: #1a1a2e; color: #e0e0e0; cursor: pointer; font-size: 0.8rem;
+    }
+    #controls-panel button:hover { background: #0f3460; border-color: #4a9eff; }
+    #speed-display { font-size: 0.8rem; color: #aaa; }
+    #label-input {
+      padding: 4px 8px; border: 1px solid #555; border-radius: 4px;
+      background: #1a1a2e; color: #e0e0e0; font-size: 0.8rem; width: 140px;
+    }
+    #assign-btn {
+      padding: 4px 10px; border: 1px solid #4a9eff; border-radius: 4px;
+      background: #0f3460; color: #4a9eff; cursor: pointer; font-size: 0.8rem;
+    }
+    #export-btn {
+      margin-left: auto; padding: 5px 14px;
+      border: 1px solid #4caf50; border-radius: 4px;
+      background: #1b5e20; color: #a5d6a7; cursor: pointer; font-size: 0.8rem;
+    }
+    #loading-overlay {
+      position: fixed; inset: 0; background: #1a1a2eee; display: flex;
+      align-items: center; justify-content: center; z-index: 100;
+      font-size: 1.2rem; flex-direction: column; gap: 12px;
+    }
+    #loading-overlay.hidden { display: none; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #333; border-top-color: #4a9eff; border-radius: 50%; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #anim-count { padding: 4px 16px; font-size: 0.75rem; color: #888; border-top: 1px solid #333; }
+  </style>
+</head>
+<body>
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <div>Loading TV Man model...</div>
+  </div>
+  <div id="app">
+    <div id="sidebar">
+      <h2>Animation Browser</h2>
+      <input id="search-box" type="text" placeholder="Search animations (e.g. 05_03, walk, idle)..." />
+      <div id="series-nav"></div>
+      <div id="anim-list"></div>
+      <div id="anim-count">0 animations</div>
+    </div>
+    <div id="viewport">
+      <canvas id="preview"></canvas>
+      <div id="info-panel">
+        <div id="now-playing">No animation loaded</div>
+      </div>
+      <div id="controls-panel">
+        <button id="prev-btn">&#9664; Prev</button>
+        <button id="play-btn">&#9654; Play</button>
+        <button id="next-btn">Next &#9654;</button>
+        <button id="slower-btn">0.5x</button>
+        <span id="speed-display">Speed: 1.0x</span>
+        <button id="faster-btn">2.0x</button>
+        <input id="label-input" type="text" placeholder="Label (e.g. walk, idle)" />
+        <button id="assign-btn">Assign Label</button>
+        <button id="export-btn">Export Labels JSON</button>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/previewer.js"></script>
+</body>
+</html>
