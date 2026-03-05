@@ -42,7 +42,7 @@ const INTRO_STEPS = [
     camPos: new THREE.Vector3(0, 3, 8),
     lookAt: new THREE.Vector3(0, 1, 3),
     duration: 3,
-    text: "WASD to move  \u00b7  Mouse to look  \u00b7  Space to jump",
+    text: "WASD move  \u00b7  Shift run  \u00b7  Space jump/glide  \u00b7  E interact/carry  \u00b7  Tab tools",
   },
 ];
 
@@ -81,6 +81,23 @@ export class GameStateManager {
     // Hide every screen overlay
     for (const el of document.querySelectorAll('.screen')) {
       el.classList.add('hidden');
+    }
+
+    // Safety reset for transient gameplay overlays that are not `.screen`.
+    const transientOverlayIds = [
+      'day-fade-overlay',
+      'day-summary-popup',
+      'tool-inventory',
+      'npc-dialogue-overlay',
+      'shop-overlay',
+    ];
+    for (const id of transientOverlayIds) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      el.classList.add('hidden');
+      // Explicit style reset avoids partially-visible GSAP states.
+      el.style.opacity = '';
+      el.style.visibility = '';
     }
 
     switch (phase) {
@@ -181,7 +198,7 @@ export class GameStateManager {
 
       switch (item.dataset.action) {
         case 'new-game':
-          this.setPhase(GamePhase.INTRO);
+          this.setPhase(GamePhase.GAMEPLAY);
           break;
         case 'continue':
           if (this.hasSaveData()) {

@@ -38,12 +38,75 @@ export function createPlayerBody(spawnPos = { x: 0, y: 1.5, z: 2 }) {
 }
 
 /**
+ * Create a heavy pushable dynamic cuboid used for Chibi-style step puzzles.
+ */
+export function createPushableBlockBody({
+  position = { x: 0, y: 0.5, z: 0 },
+  size = { x: 1, y: 0.7, z: 1 },
+  mass = 14,
+  friction = 1.6,
+  linearDamping = 6.8,
+  angularDamping = 8.4,
+} = {}) {
+  const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
+    .setTranslation(position.x, position.y, position.z)
+    .setCanSleep(false);
+
+  const rigidBody = world.createRigidBody(bodyDesc);
+  rigidBody.setLinearDamping(linearDamping);
+  rigidBody.setAngularDamping(angularDamping);
+  rigidBody.lockRotations(true, true);
+
+  const colliderDesc = RAPIER.ColliderDesc.cuboid(
+    Math.max(0.01, size.x * 0.5),
+    Math.max(0.01, size.y * 0.5),
+    Math.max(0.01, size.z * 0.5)
+  )
+    .setFriction(friction)
+    .setRestitution(0.0)
+    .setDensity(Math.max(0.1, mass / Math.max(size.x * size.y * size.z, 0.1)));
+
+  const collider = world.createCollider(colliderDesc, rigidBody);
+  return { rigidBody, collider };
+}
+
+export function createGrabbableBody({
+  position = { x: 0, y: 0.3, z: 0 },
+  size = { x: 0.3, y: 0.3, z: 0.3 },
+  mass = 1.6,
+  friction = 1.1,
+  linearDamping = 1.8,
+  angularDamping = 2.2,
+} = {}) {
+  const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
+    .setTranslation(position.x, position.y, position.z)
+    .setCanSleep(true);
+
+  const rigidBody = world.createRigidBody(bodyDesc);
+  rigidBody.setLinearDamping(linearDamping);
+  rigidBody.setAngularDamping(angularDamping);
+
+  const colliderDesc = RAPIER.ColliderDesc.cuboid(
+    Math.max(0.01, size.x * 0.5),
+    Math.max(0.01, size.y * 0.5),
+    Math.max(0.01, size.z * 0.5)
+  )
+    .setFriction(friction)
+    .setRestitution(0.12)
+    .setDensity(Math.max(0.05, mass / Math.max(size.x * size.y * size.z, 0.05)));
+
+  const collider = world.createCollider(colliderDesc, rigidBody);
+  return { rigidBody, collider };
+}
+
+/**
  * Create static colliders for room geometry.
  * Supports two types:
  *   - { type: 'trimesh', vertices: Float32Array, indices: Uint32Array }
  *   - { position: {x,y,z}, size: {x,y,z} }  (cuboid, for room shell)
  */
 export function createRoomColliders(colliderDefs) {
+  const bodies = [];
   for (const def of colliderDefs) {
     if (def.type === 'trimesh') {
       // Trimesh collider — vertices are already in world space, body at origin
@@ -54,6 +117,7 @@ export function createRoomColliders(colliderDefs) {
         def.vertices, def.indices
       ).setFriction(0.7);
       world.createCollider(colliderDesc, body);
+      bodies.push(body);
     } else {
       // Cuboid collider — for room shell (floor, walls, ceiling)
       const bodyDesc = RAPIER.RigidBodyDesc.fixed()
@@ -64,7 +128,30 @@ export function createRoomColliders(colliderDefs) {
         def.size.x, def.size.y, def.size.z
       ).setFriction(0.7);
       world.createCollider(colliderDesc, body);
+      bodies.push(body);
     }
+  }
+  return bodies;
+}
+
+export function removeRoomColliders(bodies) {
+  if (!Array.isArray(bodies) || !world) return;
+  for (const body of bodies) {
+    if (!body) continue;
+    try {
+      world.removeRigidBody(body);
+    } catch (_err) {
+      // Ignore stale references across room reloads.
+    }
+  }
+}
+
+export function removeDynamicBody(rigidBody) {
+  if (!rigidBody || !world) return;
+  try {
+    world.removeRigidBody(rigidBody);
+  } catch (_err) {
+    // Ignore when already removed.
   }
 }
 

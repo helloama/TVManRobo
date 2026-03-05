@@ -3,72 +3,108 @@ import * as THREE from 'three';
 /**
  * Runtime animation retargeter with world-space bind-pose correction.
  *
- * Transfers animations between two Mixamo-rigged skeletons that share bone names
- * but may have different bind poses / parent chain orientations.
- *
- *   Q_desired_world = Q_src_animated_world * inv(Q_src_bind_world) * Q_tgt_bind_world
- *   Q_local = inv(Q_parent_world) * Q_desired_world
+ * Transfers animation between similarly named skeletons, correcting for
+ * different bind orientations and optional hips translation scaling.
  */
 export class RuntimeRetargeter {
   /**
-   * @param {THREE.Object3D} sourceRoot - Source skeleton (from GLB anim file)
-   * @param {THREE.Object3D} targetModel - Target model (player character)
+   * @param {THREE.Object3D} sourceRoot
+   * @param {THREE.Object3D} targetModel
+   * @param {object} options
    */
-  constructor(sourceRoot, targetModel) {
+  constructor(sourceRoot, targetModel, options = {}) {
     this.sourceRoot = sourceRoot;
     this.targetModel = targetModel;
     this.mixer = new THREE.AnimationMixer(this.sourceRoot);
     this.currentAction = null;
 
-    // Build bone lookups (by name, matching between source and target)
+    this.options = {
+      enableHipsTranslation: options.enableHipsTranslation ?? false,
+      hipsBoneName: options.hipsBoneName ?? 'mixamorig:Hips',
+      hipsScaleRatio: options.hipsScaleRatio ?? null,
+    };
+
     const srcBones = {};
-    sourceRoot.traverse(obj => { if (obj.isBone) srcBones[obj.name] = obj; });
+    sourceRoot.traverse((obj) => {
+      if (!obj.isBone) return;
+      const key = normalizeBoneName(obj.name);
+      if (!srcBones[key]) srcBones[key] = obj;
+    });
 
     const tgtBones = {};
-    targetModel.traverse(obj => { if (obj.isBone) tgtBones[obj.name] = obj; });
+    targetModel.traverse((obj) => {
+      if (!obj.isBone) return;
+      const key = normalizeBoneName(obj.name);
+      if (!tgtBones[key]) tgtBones[key] = obj;
+    });
 
-    // Ensure world matrices are up to date for bind-pose capture
     sourceRoot.updateMatrixWorld(true);
     targetModel.updateMatrixWorld(true);
 
-    // Build bone pairs with world-space bind-pose correction
     this.pairs = [];
-    for (const name of Object.keys(srcBones)) {
-      const src = srcBones[name];
-      const tgt = tgtBones[name];
+    for (const key of Object.keys(srcBones)) {
+      const src = srcBones[key];
+      const tgt = tgtBones[key];
       if (!tgt) continue;
 
-      // Capture world-space bind quaternions
-      const srcBindWorld = new THREE.Quaternion();
-      src.getWorldQuaternion(srcBindWorld);
+      // Local-space correction avoids parent world-order instability and
+      // keeps mapped limbs from drifting/twisting frame-to-frame.
+      const srcBindLocal = src.quaternion.clone();
+      const tgtBindLocal = tgt.quaternion.clone();
+      const srcBindInv = srcBindLocal.clone().invert();
+      const depth = getBoneDepth(src);
 
-      const tgtBindWorld = new THREE.Quaternion();
-      tgt.getWorldQuaternion(tgtBindWorld);
+      this.pairs.push({ src, tgt, srcBindInv, tgtBindLocal, depth });
+    }
+    this.pairs.sort((a, b) => a.depth - b.depth);
 
-      // correction = inv(srcBindWorld) * tgtBindWorld
-      const correction = srcBindWorld.clone().invert().multiply(tgtBindWorld);
+    this.hips = null;
+    if (this.options.enableHipsTranslation) {
+      const hipsName = this.options.hipsBoneName;
+      const hipsKey = normalizeBoneName(hipsName);
+      const srcHips = srcBones[hipsKey];
+      const tgtHips = tgtBones[hipsKey];
 
-      this.pairs.push({ src, tgt, parent: tgt.parent, correction });
+      if (srcHips && tgtHips) {
+        const srcBindLocal = srcHips.position.clone();
+        const tgtBindLocal = tgtHips.position.clone();
+
+        let scaleRatio = this.options.hipsScaleRatio;
+        if (!(scaleRatio > 0)) {
+          scaleRatio = estimateScaleRatio(srcBones, tgtBones, hipsKey);
+        }
+
+        this.hips = {
+          src: srcHips,
+          tgt: tgtHips,
+          srcBindLocal,
+          tgtBindLocal,
+          scaleRatio: scaleRatio > 0 ? scaleRatio : 1,
+        };
+      }
     }
 
-    // Reusable temporaries
-    this._worldQ = new THREE.Quaternion();
     this._desiredQ = new THREE.Quaternion();
-    this._parentWorldQ = new THREE.Quaternion();
+    this._hipsDelta = new THREE.Vector3();
 
-    // Hide source skeleton
     this.sourceRoot.visible = false;
 
-    console.log(`RuntimeRetargeter: ${this.pairs.length} bone pairs mapped`);
+    console.log(
+      `RuntimeRetargeter: ${this.pairs.length} bone pairs mapped` +
+      (this.hips
+        ? ` | hips translation enabled (scale=${this.hips.scaleRatio.toFixed(3)})`
+        : ' | hips translation disabled')
+    );
   }
 
-  /**
-   * Play an animation clip on the source skeleton.
-   */
-  play(clip, { fadeTime = 0.2, loop = THREE.LoopRepeat, clampWhenFinished = false } = {}) {
+  play(
+    clip,
+    { fadeTime = 0.2, loop = THREE.LoopRepeat, clampWhenFinished = false } = {}
+  ) {
     if (this.currentAction) {
       this.currentAction.fadeOut(fadeTime);
     }
+
     this.currentAction = this.mixer.clipAction(clip);
     this.currentAction.reset();
     this.currentAction.setLoop(loop);
@@ -76,29 +112,76 @@ export class RuntimeRetargeter {
     this.currentAction.fadeIn(fadeTime).play();
   }
 
-  /**
-   * Advance source animation and copy world-space corrected rotations to target.
-   */
   update(delta) {
     if (!this.currentAction) return;
 
     this.mixer.update(delta);
     this.sourceRoot.updateMatrixWorld(true);
 
-    for (const { src, tgt, parent, correction } of this.pairs) {
-      // 1. Animated source world quaternion
-      src.getWorldQuaternion(this._worldQ);
+    for (const { src, tgt, srcBindInv, tgtBindLocal } of this.pairs) {
+      // target = targetBind * (sourceBind^-1 * sourceCurrent)
+      this._desiredQ.copy(srcBindInv).multiply(src.quaternion);
+      this._desiredQ.premultiply(tgtBindLocal);
+      tgt.quaternion.copy(this._desiredQ);
+    }
 
-      // 2. Apply correction: desiredWorld = srcAnimWorld * correction
-      this._desiredQ.copy(this._worldQ).multiply(correction);
+    if (this.hips) {
+      const { src, tgt, srcBindLocal, tgtBindLocal, scaleRatio } = this.hips;
 
-      // 3. Convert to target local space
-      if (parent) {
-        parent.getWorldQuaternion(this._parentWorldQ);
-        tgt.quaternion.copy(this._parentWorldQ).invert().multiply(this._desiredQ);
-      } else {
-        tgt.quaternion.copy(this._desiredQ);
-      }
+      this._hipsDelta
+        .copy(src.position)
+        .sub(srcBindLocal)
+        .multiplyScalar(scaleRatio);
+
+      tgt.position.copy(tgtBindLocal).add(this._hipsDelta);
     }
   }
+}
+
+function estimateScaleRatio(srcBones, tgtBones, hipsName) {
+  const srcHips = srcBones[hipsName];
+  const tgtHips = tgtBones[hipsName];
+  if (!srcHips || !tgtHips) return 1;
+
+  const headKey = normalizeBoneName('mixamorig:Head');
+  const srcHead = srcBones[headKey];
+  const tgtHead = tgtBones[headKey];
+
+  if (!srcHead || !tgtHead) return 1;
+
+  const srcHipsPos = new THREE.Vector3();
+  const srcHeadPos = new THREE.Vector3();
+  const tgtHipsPos = new THREE.Vector3();
+  const tgtHeadPos = new THREE.Vector3();
+
+  srcHips.getWorldPosition(srcHipsPos);
+  srcHead.getWorldPosition(srcHeadPos);
+  tgtHips.getWorldPosition(tgtHipsPos);
+  tgtHead.getWorldPosition(tgtHeadPos);
+
+  const srcLen = srcHeadPos.distanceTo(srcHipsPos);
+  const tgtLen = tgtHeadPos.distanceTo(tgtHipsPos);
+
+  if (srcLen <= 1e-4 || tgtLen <= 1e-4) return 1;
+
+  return tgtLen / srcLen;
+}
+
+function getBoneDepth(bone) {
+  let depth = 0;
+  let node = bone.parent;
+
+  while (node) {
+    if (node.isBone) {
+      depth += 1;
+    }
+    node = node.parent;
+  }
+
+  return depth;
+}
+
+function normalizeBoneName(name) {
+  if (!name) return '';
+  return THREE.PropertyBinding.sanitizeNodeName(name);
 }

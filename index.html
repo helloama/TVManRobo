@@ -26,7 +26,13 @@
     }
     .screen.hidden {
       opacity: 0;
-      pointer-events: none;
+      pointer-events: none !important;
+    }
+
+    #day-fade-overlay.hidden,
+    #day-summary-popup.hidden,
+    #fpv-indicator.hidden {
+      display: none;
     }
 
     /* ── Loading Screen ──────────────────────────────────────── */
@@ -284,11 +290,48 @@
       font-family: 'Fredoka', 'Segoe UI', sans-serif;
     }
 
+    /* ── Cutscene Dialogue Overlay ────────────────────────────── */
+    #cutscene-overlay {
+      justify-content: flex-end;
+      align-items: center;
+      padding: 0 1rem 2.3rem;
+      pointer-events: none;
+      z-index: 26;
+    }
+
+    #cutscene-dialogue-box {
+      width: min(760px, 92vw);
+      background: rgba(16, 10, 28, 0.9);
+      border: 2px solid rgba(255, 217, 160, 0.28);
+      border-radius: 16px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+      padding: 0.9rem 1rem 1rem;
+      color: #ffe4b5;
+    }
+
+    #cutscene-speaker {
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(127, 212, 160, 0.95);
+      margin-bottom: 0.35rem;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    #cutscene-dialogue-text {
+      font-size: 1.05rem;
+      line-height: 1.45;
+      color: #ffe4b5;
+      min-height: 2.2rem;
+    }
+
     /* ── Gameplay HUD ────────────────────────────────────────── */
     #gameplay-hud {
       pointer-events: none;
       justify-content: flex-end;
-      padding-bottom: 2rem;
+      align-items: stretch;
+      padding: 1rem 1rem 2rem;
     }
 
     #click-prompt {
@@ -297,8 +340,444 @@
       opacity: 0.8;
       transition: opacity 0.3s;
       letter-spacing: 0.03em;
+      text-align: center;
+    }
+
+    #hud-top-left {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      width: min(360px, 42vw);
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .hud-panel {
+      background: rgba(20, 12, 35, 0.82);
+      border: 2px solid rgba(255, 217, 160, 0.2);
+      border-radius: 14px;
+      padding: 0.65rem 0.8rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .hud-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.42rem;
+      font-size: 0.95rem;
+      color: #ffe4b5;
+    }
+
+    #energy-bar-outer {
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255, 217, 160, 0.18);
+      border: 1px solid rgba(255, 217, 160, 0.16);
+      overflow: hidden;
+    }
+
+    #energy-bar-fill {
+      height: 100%;
+      width: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #6ddf9a 0%, #ffe08a 65%, #ff9f5a 100%);
+      transition: width 0.2s linear, filter 0.2s ease;
+      filter: saturate(1.1);
+    }
+
+    #energy-state {
+      font-size: 0.85rem;
+      color: rgba(255, 217, 160, 0.9);
+      letter-spacing: 0.01em;
+    }
+
+    #happy-points-meta {
+      font-size: 0.82rem;
+      color: rgba(255, 217, 160, 0.8);
+      letter-spacing: 0.01em;
+    }
+
+    .happy-points-economy {
+      margin-top: 0.3rem;
+      font-size: 0.78rem;
+      color: rgba(255, 217, 160, 0.78);
+      letter-spacing: 0.01em;
+    }
+
+    #interact-prompt {
+      position: absolute;
+      bottom: 4.3rem;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #ffe4b5;
+      background: rgba(20, 12, 35, 0.8);
+      border: 1px solid rgba(255, 217, 160, 0.24);
+      border-radius: 999px;
+      padding: 0.45rem 0.9rem;
+      font-size: 0.92rem;
+      opacity: 0;
+      transition: opacity 0.2s ease;
     }
     #click-prompt.hidden { opacity: 0; }
+
+    #interact-prompt.visible { opacity: 1; }
+
+    #hud-top-right {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      width: min(280px, 34vw);
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      align-items: stretch;
+    }
+
+    #time-hud .time-main {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #ffe8be;
+      letter-spacing: 0.03em;
+    }
+
+    #time-hud .time-sub {
+      font-size: 0.84rem;
+      color: rgba(255, 217, 160, 0.86);
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.32rem;
+    }
+
+    #tool-hud {
+      font-size: 0.88rem;
+      color: rgba(255, 217, 160, 0.94);
+    }
+
+    #tool-hud-name {
+      color: #a6f0ff;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    #tool-inventory {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(8, 5, 16, 0.42);
+      backdrop-filter: blur(2px);
+      z-index: 40;
+      pointer-events: auto;
+    }
+
+    .tool-panel {
+      width: min(520px, 92vw);
+      max-height: min(72vh, 640px);
+      overflow: auto;
+      text-align: left;
+    }
+
+    #tool-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      margin-top: 0.9rem;
+    }
+
+    .tool-entry {
+      text-align: left;
+      border-radius: 12px;
+      border: 2px solid rgba(255, 217, 160, 0.2);
+      background: rgba(26, 14, 44, 0.74);
+      color: #ffe4b5;
+      padding: 0.65rem 0.75rem;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+      font-family: inherit;
+    }
+
+    .tool-entry:hover {
+      transform: translateY(-1px);
+      border-color: rgba(136, 236, 255, 0.68);
+    }
+
+    .tool-entry.selected {
+      border-color: rgba(136, 236, 255, 0.95);
+      box-shadow: 0 0 0 1px rgba(136, 236, 255, 0.4) inset;
+    }
+
+    .tool-entry.locked {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .tool-entry-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .tool-entry-desc {
+      margin-top: 0.22rem;
+      font-size: 0.8rem;
+      color: rgba(255, 217, 160, 0.8);
+    }
+
+    #tool-inventory-hint {
+      margin-top: 0.9rem;
+      font-size: 0.8rem;
+      color: rgba(255, 217, 160, 0.66);
+    }
+
+    #day-fade-overlay {
+      position: fixed;
+      inset: 0;
+      background: #040308;
+      z-index: 45;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    #day-summary-popup {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 46;
+      width: min(420px, 88vw);
+      text-align: center;
+      background: rgba(18, 12, 28, 0.94);
+      border: 2px solid rgba(255, 217, 160, 0.28);
+      border-radius: 16px;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6);
+      color: #ffe4b5;
+      padding: 1.1rem 1rem 1.2rem;
+    }
+
+    #day-summary-cycle {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.56rem;
+    }
+
+    #day-summary-earned {
+      font-size: 0.92rem;
+      margin-bottom: 0.2rem;
+    }
+
+    #day-summary-total {
+      font-size: 0.84rem;
+      color: rgba(255, 217, 160, 0.84);
+    }
+
+    #fpv-indicator {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: rgba(198, 241, 255, 0.8);
+      font-size: 0.95rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-shadow: 0 0 18px rgba(70, 186, 227, 0.38);
+      pointer-events: none;
+    }
+
+    #npc-dialogue-overlay {
+      justify-content: flex-end;
+      align-items: center;
+      padding: 0 1rem 2rem;
+      background: rgba(7, 5, 12, 0.18);
+      pointer-events: auto;
+      z-index: 41;
+    }
+
+    .npc-dialogue-box {
+      width: min(760px, 94vw);
+      background: rgba(14, 10, 24, 0.95);
+      border: 2px solid rgba(166, 240, 255, 0.34);
+      border-radius: 16px;
+      box-shadow: 0 14px 45px rgba(0, 0, 0, 0.55);
+      padding: 0.88rem 1rem 1rem;
+      color: #ffe4b5;
+      pointer-events: auto;
+    }
+
+    #npc-dialogue-speaker {
+      color: rgba(166, 240, 255, 0.96);
+      font-size: 0.84rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      margin-bottom: 0.32rem;
+      font-weight: 600;
+    }
+
+    #npc-dialogue-text {
+      min-height: 2.1rem;
+      line-height: 1.45;
+      font-size: 1.02rem;
+    }
+
+    #npc-dialogue-choices {
+      margin-top: 0.74rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .npc-choice {
+      text-align: left;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 217, 160, 0.28);
+      background: rgba(28, 18, 44, 0.72);
+      color: #ffe4b5;
+      padding: 0.52rem 0.62rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.15s ease, transform 0.12s ease;
+    }
+
+    .npc-choice:hover {
+      border-color: rgba(166, 240, 255, 0.84);
+      transform: translateY(-1px);
+    }
+
+    #npc-dialogue-hint {
+      margin-top: 0.62rem;
+      font-size: 0.78rem;
+      color: rgba(255, 217, 160, 0.68);
+      letter-spacing: 0.01em;
+    }
+
+    #shop-overlay {
+      justify-content: center;
+      align-items: center;
+      background: rgba(5, 3, 12, 0.72);
+      z-index: 44;
+      pointer-events: auto;
+    }
+
+    .shop-panel {
+      width: min(700px, 94vw);
+      max-height: min(78vh, 760px);
+      overflow: auto;
+      border-radius: 18px;
+      border: 2px solid rgba(166, 240, 255, 0.28);
+      background:
+        linear-gradient(180deg, rgba(19, 28, 40, 0.96), rgba(18, 14, 28, 0.95));
+      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.62);
+      padding: 1rem 1.1rem 1.1rem;
+      color: #ffe4b5;
+      font-family: 'Fredoka', 'Segoe UI', sans-serif;
+    }
+
+    .shop-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.82rem;
+    }
+
+    .shop-title {
+      font-size: 1.32rem;
+      font-weight: 700;
+      color: #9be8ff;
+      letter-spacing: 0.02em;
+    }
+
+    .shop-meta {
+      display: flex;
+      gap: 0.8rem;
+      font-size: 0.88rem;
+      color: rgba(255, 217, 160, 0.92);
+    }
+
+    .shop-chip {
+      padding: 0.32rem 0.52rem;
+      border-radius: 999px;
+      background: rgba(13, 20, 31, 0.8);
+      border: 1px solid rgba(255, 217, 160, 0.26);
+    }
+
+    #shop-item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .shop-item {
+      width: 100%;
+      text-align: left;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 217, 160, 0.24);
+      background: rgba(16, 25, 38, 0.8);
+      color: #ffe4b5;
+      padding: 0.62rem 0.7rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.12s ease, border-color 0.15s ease;
+    }
+
+    .shop-item:hover {
+      transform: translateY(-1px);
+      border-color: rgba(166, 240, 255, 0.84);
+    }
+
+    .shop-item.locked {
+      opacity: 0.58;
+    }
+
+    .shop-item.owned {
+      border-color: rgba(127, 212, 160, 0.84);
+      background: rgba(22, 40, 31, 0.74);
+    }
+
+    .shop-item-title {
+      font-size: 0.98rem;
+      font-weight: 600;
+      margin-bottom: 0.26rem;
+      letter-spacing: 0.01em;
+    }
+
+    .shop-item-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.52rem;
+      font-size: 0.78rem;
+      color: rgba(255, 217, 160, 0.82);
+    }
+
+    #shop-hint {
+      margin-top: 0.75rem;
+      font-size: 0.78rem;
+      color: rgba(255, 217, 160, 0.72);
+    }
+
+    @media (max-width: 900px) {
+      #hud-top-left {
+        width: min(360px, 60vw);
+      }
+
+      #hud-top-right {
+        width: min(260px, 45vw);
+      }
+    }
+
+    @media (max-width: 640px) {
+      #hud-top-left {
+        width: calc(100vw - 1.6rem);
+      }
+
+      #hud-top-right {
+        right: 0.8rem;
+        top: auto;
+        bottom: 6.4rem;
+        width: min(260px, 56vw);
+      }
+    }
   </style>
 </head>
 <body>
@@ -362,6 +841,34 @@
           <span>Jump</span>
           <span class="settings-value">Space</span>
         </div>
+        <div class="settings-row">
+          <span>Glide (air)</span>
+          <span class="settings-value">Hold Space</span>
+        </div>
+        <div class="settings-row">
+          <span>Run</span>
+          <span class="settings-value">Shift</span>
+        </div>
+        <div class="settings-row">
+          <span>Interact / Plug</span>
+          <span class="settings-value">E</span>
+        </div>
+        <div class="settings-row">
+          <span>Use Tool</span>
+          <span class="settings-value">Left Click</span>
+        </div>
+        <div class="settings-row">
+          <span>Tool Menu</span>
+          <span class="settings-value">Tab</span>
+        </div>
+        <div class="settings-row">
+          <span>First Person</span>
+          <span class="settings-value">Z</span>
+        </div>
+        <div class="settings-row">
+          <span>Shop</span>
+          <span class="settings-value">P or E on terminal</span>
+        </div>
       </div>
       <button class="menu-item" data-action="back">
         <span class="menu-icon">&#9664;</span> Back
@@ -377,9 +884,94 @@
     <div class="intro-skip">Press ESC or Click to skip</div>
   </div>
 
+  <!-- Cutscene Dialogue -->
+  <div id="cutscene-overlay" class="screen hidden">
+    <div id="cutscene-dialogue-box">
+      <div id="cutscene-speaker"></div>
+      <p id="cutscene-dialogue-text"></p>
+    </div>
+  </div>
+
   <!-- Gameplay HUD -->
   <div id="gameplay-hud" class="screen hidden">
-    <div id="click-prompt">Click to look around &mdash; WASD to move &mdash; Space to jump</div>
+    <div id="hud-top-left">
+      <div class="hud-panel">
+        <div class="hud-label-row">
+          <span>Battery</span>
+          <span id="energy-percent">100%</span>
+        </div>
+        <div id="energy-bar-outer">
+          <div id="energy-bar-fill"></div>
+        </div>
+      </div>
+      <div id="energy-state">Status: Running</div>
+      <div class="hud-panel">
+        <div class="hud-label-row">
+          <span>Happy Points</span>
+          <span id="happy-points-value">0</span>
+        </div>
+        <div id="happy-points-meta">
+          <span id="stains-remaining">0 stains left</span>
+        </div>
+        <div class="happy-points-economy">
+          <span>Bits: <span id="currency-value">0</span> · Inventory: <span id="inventory-count">0</span></span>
+        </div>
+      </div>
+    </div>
+    <div id="hud-top-right">
+      <div id="time-hud" class="hud-panel">
+        <div class="time-main"><span id="tod-clock">18:00</span></div>
+        <div class="time-sub">
+          <span id="tod-cycle">Cycle 1</span>
+          <span id="tod-remaining">5:00</span>
+        </div>
+      </div>
+      <div id="tool-hud" class="hud-panel">
+        Equipped Tool: <span id="tool-hud-name">Toothbrush</span>
+      </div>
+    </div>
+    <div id="interact-prompt">Press E near an outlet to recharge</div>
+    <div id="click-prompt">Click to look around &mdash; WASD move &mdash; Shift run &mdash; Space jump/glide &mdash; E interact/carry &mdash; Z first-person</div>
+    <div id="fpv-indicator" class="hidden">First Person Mode</div>
+  </div>
+
+  <div id="tool-inventory" class="screen hidden">
+    <div class="menu-panel tool-panel">
+      <div class="menu-title">Tools</div>
+      <div class="menu-divider"></div>
+      <div id="tool-list"></div>
+      <div id="tool-inventory-hint">Press Tab to close</div>
+    </div>
+  </div>
+
+  <div id="day-fade-overlay" class="hidden"></div>
+  <div id="day-summary-popup" class="hidden">
+    <div id="day-summary-cycle">Cycle Complete</div>
+    <div id="day-summary-earned">Happy Points Earned: +0</div>
+    <div id="day-summary-total">Session Total: 0</div>
+  </div>
+
+  <div id="npc-dialogue-overlay" class="screen hidden">
+    <div class="npc-dialogue-box">
+      <div id="npc-dialogue-speaker">Toy</div>
+      <p id="npc-dialogue-text"></p>
+      <div id="npc-dialogue-choices"></div>
+      <div id="npc-dialogue-hint">Press E to continue</div>
+    </div>
+  </div>
+
+  <div id="shop-overlay" class="screen hidden">
+    <div class="shop-panel">
+      <div class="shop-header">
+        <div class="shop-title">Chibi-PC Shop</div>
+        <div class="shop-meta">
+          <span class="shop-chip">Bits: <span id="shop-currency">0</span></span>
+          <span class="shop-chip">Inventory: <span id="shop-inventory-count">0</span></span>
+        </div>
+      </div>
+      <div id="shop-item-list"></div>
+      <div id="shop-hint">Click an item to purchase. Esc closes shop.</div>
+    </div>
   </div>
 
   <script type="module" src="/src/main.js"></script>
